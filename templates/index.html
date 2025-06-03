@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Token Management</title>
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='style.css') }}"
+    />
+  </head>
+  <body>
+    {% extends "layout.html" %} {% block content %} {% if token_count == 0 %}
+    <form method="post">
+      <label for="num_tokens">Number of tokens to create today:</label>
+      <input
+        type="number"
+        name="num_tokens"
+        id="num_tokens"
+        min="1"
+        max="100"
+        required
+      />
+      <button type="submit">Create Tokens</button>
+    </form>
+    {% else %}
+    <!-- Window headers -->
+    <div
+      style="
+        display: flex;
+        justify-content: center;
+        max-width: 660px;
+        margin: 0 auto 20px;
+      "
+    >
+     
+
+    <div class="tokens">
+      {% for token in tokens %} {% set status_class = token[2].replace(' ', '_')
+      %}
+      <div
+        class="token {{ status_class }}"
+        data-id="{{ token[0] }}"
+        data-status="{{ token[2] }}"
+      >
+        {{ token[1] }}
+        <div>
+          <button class="status-btn btn-pending" data-status="pending"></button>
+          <button
+            class="status-btn btn-sm_verified"
+            data-status="sm verified"
+          ></button>
+          <button
+            class="status-btn btn-counselling_complete"
+            data-status="counselling complete"
+          ></button>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    <script>
+      document.querySelectorAll(".token").forEach((tokenDiv) => {
+        tokenDiv.querySelectorAll("button.status-btn").forEach((btn) => {
+          btn.addEventListener("click", () => {
+            const tokenId = tokenDiv.getAttribute("data-id");
+            const newStatus = btn.getAttribute("data-status");
+
+            fetch("/update_status", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ id: tokenId, status: newStatus }),
+            })
+              .then((response) => response.json())
+              .then((data) => {
+                if (data.success) {
+                  const newClass = "token " + newStatus.replace(/ /g, "_");
+                  tokenDiv.className = newClass;
+                  tokenDiv.setAttribute("data-status", newStatus);
+
+                  if (newStatus === "counselling complete") {
+                    tokenDiv.style.display = "none"; // Hide the token
+                  }
+                } else {
+                  alert(
+                    "Error updating status: " + (data.error || "Unknown error")
+                  );
+                }
+              });
+          });
+        });
+      });
+    </script>
+    {% endblock %}
+  </body>
+</html>

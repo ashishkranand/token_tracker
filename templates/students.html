@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Token Status for Students</title>
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='style.css') }}"
+    />
+    <style>
+      nav {
+        display: none;
+      }
+    </style>
+  </head>
+  <body>
+    {% extends "layout.html" %} {% block content %}
+
+    <div
+      style="
+        display: flex;
+        justify-content: center;
+        max-width: 660px;
+        margin: 0 auto 20px;
+      "
+    >
+     
+
+    <div class="tokens" style="justify-content: center">
+      {% for token in tokens %} {% set status_class = token[1].replace(' ', '_')
+      %}
+      <div class="token {{ status_class }}" style="cursor: default">
+        {{ token[0] }}
+        <br />
+        <small>{{ token[1].title() }}</small>
+      </div>
+      {% endfor %}
+    </div>
+
+    {% endblock %}
+  </body>
+</html>

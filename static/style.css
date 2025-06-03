@@ -1,0 +1,55 @@
+body {
+  font-family: Arial;
+  padding: 20px;
+}
+
+button {
+  margin: 10px;
+  padding: 10px;
+}
+
+/* Token tile styles */
+.token {
+  border: 1px solid black;
+  padding: 10px;
+  margin: 10px;
+  width: 100px;
+  text-align: center;
+  border-radius: 8px;
+  font-weight: bold;
+  color: white;
+}
+
+/* New background color mappings */
+.btn-pending {
+  background-color: rgb(235, 235, 25); /* Yellow */
+  color: black;
+}
+
+.btn-sm_verified {
+  background-color: rgb(4, 90, 4); /* Green */
+}
+
+.btn-counselling_complete {
+  background-color: rgb(235, 28, 28); /* Red */
+}
+
+/* Style for token status buttons (no text now) */
+.token button {
+  background: white;
+  border: none;
+  cursor: pointer;
+  padding: 4px 8px;
+  margin-top: 5px;
+  border-radius: 5px;
+  font-size: 0;
+}
+
+/* Optionally show an icon or arrow instead of text (optional) */
+/*
+.token button::after {
+  content: '↻';
+  font-size: 14px;
+  color: black;
+}
+*/
