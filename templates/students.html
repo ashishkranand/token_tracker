@@ -11,9 +11,10 @@
         display: none;
       }
     </style>
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
   </head>
   <body>
-    {% extends "layout.html" %} 
+    {% extends "layout.html" %}
     {% block content %}
 
     <div
@@ -25,9 +26,9 @@
       "
     >
       <div class="tokens" style="justify-content: center; flex-wrap: wrap; display: flex; gap: 10px;">
-        {% for token in tokens %} 
+        {% for token in tokens %}
           {% set status_class = token[1].replace(' ', '_') %}
-          <div class="token {{ status_class }}" style="cursor: default">
+          <div class="token {{ status_class }}" data-number="{{ token[0] }}" style="cursor: default">
             {{ token[0] }}
             <br />
             <small>{{ token[1].title() }}</small>
@@ -37,31 +38,32 @@
     </div>
 
     <script>
-      function fetchTokens() {
-        fetch("/students", {
-          headers: { "X-Requested-With": "XMLHttpRequest" }
-        })
-        .then(response => response.json())
-        .then(data => {
-          const container = document.querySelector(".tokens");
-          container.innerHTML = ""; // Clear previous tokens
+      const socket = io();
 
-          data.tokens.forEach(token => {
-            if (token.status !== "counselling complete") {
-              const div = document.createElement("div");
-              div.className = "token " + token.status.replace(/ /g, "_");
-              div.style.cursor = "default";
-              div.innerHTML = `${token.number}<br /><small>${token.status}</small>`;
-              container.appendChild(div);
-            }
-          });
-        })
-        .catch(error => console.error("Failed to fetch tokens:", error));
+      function updateTokens(data) {
+        const container = document.querySelector(".tokens");
+        container.innerHTML = "";
+
+        data.tokens.forEach(token => {
+          if (token.status !== "counselling complete") {
+            const div = document.createElement("div");
+            div.className = "token " + token.status.replace(/ /g, "_");
+            div.setAttribute("data-number", token.number);
+            div.style.cursor = "default";
+            div.innerHTML = `${token.number}<br /><small>${token.status}</small>`;
+            container.appendChild(div);
+          }
+        });
       }
 
-      // Initial load and fetch every 5 seconds
-      fetchTokens();
-      setInterval(fetchTokens, 5000);
+      socket.on("connect", () => {
+        console.log("Connected to server via Socket.IO");
+      });
+
+      socket.on("status_update", (data) => {
+        console.log("Received status update", data);
+        updateTokens(data);
+      });
     </script>
 
     {% endblock %}
