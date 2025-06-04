@@ -6,9 +6,13 @@
       rel="stylesheet"
       href="{{ url_for('static', filename='style.css') }}"
     />
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
   </head>
   <body>
-    {% extends "layout.html" %} {% block content %} {% if token_count == 0 %}
+    {% extends "layout.html" %}
+    {% block content %}
+
+    {% if token_count == 0 %}
     <form method="post">
       <label for="num_tokens">Number of tokens to create today:</label>
       <input
@@ -22,43 +26,33 @@
       <button type="submit">Create Tokens</button>
     </form>
     {% else %}
-    <!-- Window headers -->
     <div
-      style="
-        display: flex;
-        justify-content: center;
-        max-width: 660px;
-        margin: 0 auto 20px;
-      "
+      style="display: flex; justify-content: center; max-width: 660px; margin: 0 auto 20px;"
     >
-     
+    </div>
 
     <div class="tokens">
-      {% for token in tokens %} {% set status_class = token[2].replace(' ', '_')
-      %}
-      <div
-        class="token {{ status_class }}"
-        data-id="{{ token[0] }}"
-        data-status="{{ token[2] }}"
-      >
-        {{ token[1] }}
-        <div>
-          <button class="status-btn btn-pending" data-status="pending"></button>
-          <button
-            class="status-btn btn-sm_verified"
-            data-status="sm verified"
-          ></button>
-          <button
-            class="status-btn btn-counselling_complete"
-            data-status="counselling complete"
-          ></button>
+      {% for token in tokens %}
+        {% set status_class = token[2].replace(' ', '_') %}
+        <div
+          class="token {{ status_class }}"
+          data-id="{{ token[0] }}"
+          data-status="{{ token[2] }}"
+        >
+          {{ token[1] }}
+          <div>
+            <button class="status-btn btn-pending" data-status="pending"></button>
+            <button class="status-btn btn-sm_verified" data-status="sm verified"></button>
+            <button class="status-btn btn-counselling_complete" data-status="counselling complete"></button>
+          </div>
         </div>
-      </div>
       {% endfor %}
     </div>
     {% endif %}
 
     <script>
+      const socket = io();
+
       document.querySelectorAll(".token").forEach((tokenDiv) => {
         tokenDiv.querySelectorAll("button.status-btn").forEach((btn) => {
           btn.addEventListener("click", () => {
@@ -78,12 +72,13 @@
                   tokenDiv.setAttribute("data-status", newStatus);
 
                   if (newStatus === "counselling complete") {
-                    tokenDiv.style.display = "none"; // Hide the token
+                    tokenDiv.style.display = "none";
                   }
+
+                  // Notify others via Socket.IO
+                  socket.emit("token_updated");
                 } else {
-                  alert(
-                    "Error updating status: " + (data.error || "Unknown error")
-                  );
+                  alert("Error updating status: " + (data.error || "Unknown error"));
                 }
               });
           });
