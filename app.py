@@ -1,10 +1,12 @@
 import os
 from flask import Flask, render_template, request, redirect, url_for, session, jsonify
+from flask_socketio import SocketIO
 import mysql.connector
 from datetime import date
 
 app = Flask(__name__)
 app.secret_key = "your_secret_key"
+socketio = SocketIO(app, cors_allowed_origins="*", async_mode="eventlet")
 
 db_config = {
     'host': os.environ.get("DB_HOST"),
@@ -13,7 +15,6 @@ db_config = {
     'database': os.environ.get("DB_NAME"),
     'port': os.environ.get("DB_PORT")
 }
-
 
 def get_db_connection():
     return mysql.connector.connect(**db_config)
@@ -30,14 +31,12 @@ def register():
         conn = get_db_connection()
         cursor = conn.cursor()
 
-        # Check if user already exists
         cursor.execute("SELECT id FROM users WHERE username=%s", (username,))
         if cursor.fetchone():
             cursor.close()
             conn.close()
             return render_template('register.html', error="Username already exists.")
 
-        # Register user (default is_admin=0 for regular user)
         cursor.execute("INSERT INTO users (username, password, is_admin) VALUES (%s, %s, %s)",
                        (username, password, 0))
         conn.commit()
@@ -48,7 +47,6 @@ def register():
 
     return render_template('register.html')
 
-# Login route
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
@@ -74,7 +72,6 @@ def logout():
     session.clear()
     return redirect(url_for('login'))
 
-# Admin and normal user dashboard (for token creation and update)
 @app.route('/', methods=['GET', 'POST'])
 def index():
     if 'user_id' not in session:
@@ -107,7 +104,6 @@ def index():
             return f"Error: {e}"
         return redirect(url_for('index'))
 
-    # Admin sees all tokens; normal users only those NOT counselling complete
     if session.get('is_admin'):
         cursor.execute(
             "SELECT id, token_number, status FROM tokens WHERE created_date=%s ORDER BY token_number",
@@ -124,10 +120,6 @@ def index():
     conn.close()
 
     return render_template('index.html', tokens=tokens, token_count=token_count)
-
-
-from flask import request, jsonify, render_template, session
-from datetime import date
 
 @app.route('/students', methods=['GET'])
 def students():
@@ -150,16 +142,11 @@ def students():
     cursor.close()
     conn.close()
 
-    # 🔄 If it's an AJAX request (from JavaScript), return JSON
     if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
         return jsonify(tokens=[{'number': t[0], 'status': t[1]} for t in tokens])
 
-    # 👀 Otherwise, render the HTML template
     return render_template('students.html', tokens=tokens)
 
-
-
-# Update token status (admin and normal users allowed)
 @app.route('/update_status', methods=['POST'])
 def update_status():
     if 'user_id' not in session:
@@ -176,13 +163,19 @@ def update_status():
     cursor = conn.cursor()
     cursor.execute("UPDATE tokens SET status=%s WHERE id=%s", (status, token_id))
     conn.commit()
+
+    cursor.execute("SELECT token_number, status FROM tokens WHERE id=%s", (token_id,))
+    updated_token = cursor.fetchone()
+
     cursor.close()
     conn.close()
+
+    socketio.emit('status_update', {
+        'number': updated_token[0],
+        'status': updated_token[1]
+    })
+
     return jsonify({'success': True})
 
-
-
-
 if __name__ == '__main__':
-    app.run(debug=True)
-
+    socketio.run(app, host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
