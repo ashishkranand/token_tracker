@@ -1,3 +1,4 @@
+import os
 from flask import Flask, render_template, request, redirect, url_for, session, jsonify
 import mysql.connector
 from datetime import date
