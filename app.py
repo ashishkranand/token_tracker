@@ -126,13 +126,15 @@ def index():
     return render_template('index.html', tokens=tokens, token_count=token_count)
 
 
-@app.route('/students')
+from flask import request, jsonify, render_template, session
+from datetime import date
+
+@app.route('/students', methods=['GET'])
 def students():
     today = date.today()
     conn = get_db_connection()
     cursor = conn.cursor()
 
-    # Students see only tokens NOT counselling complete; admin sees all
     if session.get('is_admin'):
         cursor.execute(
             "SELECT token_number, status FROM tokens WHERE created_date=%s ORDER BY token_number",
@@ -148,7 +150,13 @@ def students():
     cursor.close()
     conn.close()
 
+    # 🔄 If it's an AJAX request (from JavaScript), return JSON
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        return jsonify(tokens=[{'number': t[0], 'status': t[1]} for t in tokens])
+
+    # 👀 Otherwise, render the HTML template
     return render_template('students.html', tokens=tokens)
+
 
 
 # Update token status (admin and normal users allowed)
